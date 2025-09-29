@@ -241,14 +241,10 @@ function calculos(points_array, outdoorIndoor, menWomen, selectedEvent, marcaInp
 
                 const puntos = buscarPuntos(marcaConcurso, selectedEvent, points_array);
 
-                if (points_array[numeroImaxima][selectedEvent] < Number(marcaConcurso)) {
-
-                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, "+1400 (Out of Tables)"); // Fuera de Tablas
-
-                } else if (points_array[numeroIminima][selectedEvent] > Number(marcaConcurso)) {
-
-                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, "0 (Out of Tables)"); // Fuera de Tablas
-
+                if (Number(points_array[numeroImaxima][selectedEvent]) < Number(marcaConcurso)) {
+                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, "+1400 (Out of Tables)");
+                } else if (Number(points_array[numeroIminima][selectedEvent]) > Number(marcaConcurso)) {
+                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, "0 (Out of Tables)");
                 } else {
                     if (puntos) {
                         agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, puntos);
@@ -256,13 +252,12 @@ function calculos(points_array, outdoorIndoor, menWomen, selectedEvent, marcaInp
                         let salir_concurso = false;
 
                         for (let i = 0; !salir_concurso; i++) {
+                            // Convertir ambos a números con 2 decimales para comparar
+                            let marcaArray = Number(points_array[i][selectedEvent]).toFixed(2);
                             
-                            if (marcaConcurso > points_array[i][selectedEvent]) {
-
+                            if (Number(marcaConcurso) > Number(marcaArray)) {
                                 let nuevosPuntos = 1400 - i;
-
                                 agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, nuevosPuntos);
-
                                 salir_concurso = true;
                             }
                         }
