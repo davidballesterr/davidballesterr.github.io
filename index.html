@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Athletics Scoring Tables 2022</title>
+    <link rel="icon" href="/world_athletics_tables_2022.ico" type="image/x-icon">
+    <meta name="description" content="Interactive calculator for World Athletics Scoring Tables 2022. Calculate scores for track and field events - men, women, indoor, outdoor.">
+    <link rel="stylesheet" href="Calculadora_WA.css">
+    <script type="module" src="Calculadora_WA.js"></script>
+</head>
+<body>
+    <header class="titulo">
+        <h1>World Athletics Scoring Tables 2022</h1>
+        <h2>Calculate WA scores for track and field events</h2>
+    </header>
+
+    <main class="principal">
+        <div class="formulario_completo" id="formulario_completo">
+            <form id="formulario">
+                <div class="escojer_tipo_evento">
+
+                    <div class="choose_event_type_div">
+                        <span>Choose Event Type</span>
+                        <div class="choose_event_type">
+                            <label>
+                                <div class="outdoor">
+                                    <input type="radio" name="outdoor_indoor" id="outdoor" checked="checked">
+                                    <span title="Outdoor">Outdoor</span>
+                                </div>
+                            </label>
+                            <label>
+                                <div class="indoor">
+                                    <input type="radio" name="outdoor_indoor" id="indoor">
+                                    <span title="Indoor">Indoor</span>
+                                </div>
+                            </label>
+                            <span class="selection_outdoor_indoor"></span>
+                        </div>
+                    </div>
+
+                    <div class="choose_gender_div">
+                        <span>Choose gender</span>
+                        <div class="choose_gender">
+                            <label>
+                                <div class="men">
+                                    <input type="radio" name="men_women" id="men">
+                                    <span title="Men">Men</span>
+                                </div>
+                            </label>
+                            <label>
+                                <div class="women">
+                                    <input type="radio" name="men_women" id="women" checked="checked">
+                                    <span title="Women">Women</span>
+                                </div>
+                            </label>
+                            <span class="selection_men_women"></span>
+                        </div>
+                    </div>
+                    <div class="select_event_div">
+                        <span>Select Event</span>
+                        <select id="prueba" name="prueba" title="Select Event" required>
+                            <!-- <option value=""></option> -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="tablas">
+                    <div class="tab active" data-tab="tabla_marca" title="Mark">Mark</div>
+                    <div class="tab" data-tab="tabla_puntos" title="Score">Score</div>
+                </div>
+                
+                <div class="content" id="tabla_marca">
+                    <div class="marca_prueba">
+                        <span id="marca_span">Time</span>
+                        <input type="text" id="marca_prueba" name="marca_prueba" placeholder="hh:mm:ss.ss">
+                    </div>
+                </div>
+                
+                <div class="content" id="tabla_puntos">
+                    <div class="puntos_prueba">
+                        <span id="puntos_span">Score</span>
+                        <input type="text" id="puntos_prueba" name="puntos_prueba" placeholder="pts">
+                    </div>
+                </div>
+
+                <div id="mensaje_error"></div>
+
+                <button type="submit" class="calcular" title="Calculate">Calculate</button>
+            </form>
+        </div>
+
+
+        <div class="resultado">
+            <div class="resultado_resultado">
+                <div class="contenedor-results-history">
+                    <span class="results_history">Results History</span>
+                </div>
+                <div class="contenedor-boton">
+                    <button id="limpiarResultados" title="Clear Table">Clear Table</button>
+                </div>
+            </div>
+
+            <table id="resultado" class="sin-celdas">
+                <tr>
+                    <th>Gender</th>
+                    <th>Track</th>
+                    <th>Event</th>
+                    <th>Mark</th>
+                    <th>Score</th>
+                </tr>
+                <!-- <tr> -->
+                <!-- <td> -->
+            </table>
+        </div>
+
+        <!-- Pop-up SVG y botón de eliminar -->
+        <div id="popup_papelera" class="popup_papelera">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 26">
+                <title>Delete Row</title>
+                <desc>Trash icon, to delete the selected row.</desc>
+                <path d="M 11 -0.03125 C 10.164063 -0.03125 9.34375 0.132813 8.75 0.71875 C 8.15625 1.304688 7.96875 2.136719 7.96875 3 L 4 3 C 3.449219 3 3 3.449219 3 4 L 2 4 L 2 6 L 24 6 L 24 4 L 23 4 C 23 3.449219 22.550781 3 22 3 L 18.03125 3 C 18.03125 2.136719 17.84375 1.304688 17.25 0.71875 C 16.65625 0.132813 15.835938 -0.03125 15 -0.03125 Z M 11 2.03125 L 15 2.03125 C 15.546875 2.03125 15.71875 2.160156 15.78125 2.21875 C 15.84375 2.277344 15.96875 2.441406 15.96875 3 L 10.03125 3 C 10.03125 2.441406 10.15625 2.277344 10.21875 2.21875 C 10.28125 2.160156 10.453125 2.03125 11 2.03125 Z M 4 7 L 4 23 C 4 24.652344 5.347656 26 7 26 L 19 26 C 20.652344 26 22 24.652344 22 23 L 22 7 Z M 8 10 L 10 10 L 10 22 L 8 22 Z M 12 10 L 14 10 L 14 22 L 12 22 Z M 16 10 L 18 10 L 18 22 L 16 22 Z"></path>
+            </svg>
+        </div>
+    </main>
+
+    <footer>
+        <div class="creador-web">
+            <p>&copy; 2025 David Ballester</p>
+        </div>
+    
+        <address class="redes-sociales">
+            <ul class="redes">
+                <li class="red-social">
+                    <a href="https://www.instagram.com/davidballester4v/" target="_blank" id="instagram_link">
+                        <div class="filled"></div>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                            <title>Instagram</title>
+                            <desc>Icon of Instagram, a social network for sharing photos and videos, connecting people through creativity and visual inspiration.</desc>
+                            <path d="M 16.5 5 C 10.16639 5 5 10.16639 5 16.5 L 5 31.5 C 5 37.832757 10.166209 43 16.5 43 L 31.5 43 C 37.832938 43 43 37.832938 43 31.5 L 43 16.5 C 43 10.166209 37.832757 5 31.5 5 L 16.5 5 z M 16.5 8 L 31.5 8 C 36.211243 8 40 11.787791 40 16.5 L 40 31.5 C 40 36.211062 36.211062 40 31.5 40 L 16.5 40 C 11.787791 40 8 36.211243 8 31.5 L 8 16.5 C 8 11.78761 11.78761 8 16.5 8 z M 34 12 C 32.895 12 32 12.895 32 14 C 32 15.105 32.895 16 34 16 C 35.105 16 36 15.105 36 14 C 36 12.895 35.105 12 34 12 z M 24 14 C 18.495178 14 14 18.495178 14 24 C 14 29.504822 18.495178 34 24 34 C 29.504822 34 34 29.504822 34 24 C 34 18.495178 29.504822 14 24 14 z M 24 17 C 27.883178 17 31 20.116822 31 24 C 31 27.883178 27.883178 31 24 31 C 20.116822 31 17 27.883178 17 24 C 17 20.116822 20.116822 17 24 17 z"></path>
+                        </svg>
+                    </a>
+                </li>
+                <li class="red-social">
+                    <a href="https://youtube.com/@davidballester4v" target="_blank" id="youtube_link">
+                        <div class="filled"></div>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                            <title>Youtube</title>
+                            <desc>Icon of YouTube, an online video platform where you can discover, share, and create audiovisual content.</desc>
+                            <path d="M 44.898438 14.5 C 44.5 12.300781 42.601563 10.699219 40.398438 10.199219 C 37.101563 9.5 31 9 24.398438 9 C 17.800781 9 11.601563 9.5 8.300781 10.199219 C 6.101563 10.699219 4.199219 12.199219 3.800781 14.5 C 3.398438 17 3 20.5 3 25 C 3 29.5 3.398438 33 3.898438 35.5 C 4.300781 37.699219 6.199219 39.300781 8.398438 39.800781 C 11.898438 40.5 17.898438 41 24.5 41 C 31.101563 41 37.101563 40.5 40.601563 39.800781 C 42.800781 39.300781 44.699219 37.800781 45.101563 35.5 C 45.5 33 46 29.398438 46.101563 25 C 45.898438 20.5 45.398438 17 44.898438 14.5 Z M 19 32 L 19 18 L 31.199219 25 Z"></path>
+                        </svg>
+                    </a>
+                </li>
+            </ul>
+        </address>
+    
+        <div class="informacion-web">
+            <a href="https://worldathletics.org/news/news/scoring-tables-2022" target="_blank" title="World Athletics">World Athletics</a>
+        </div>
+    </footer>
+</body>
+</html>
