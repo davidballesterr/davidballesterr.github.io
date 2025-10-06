@@ -1,377 +1,283 @@
-import { points_mens_outdor } from './world_athletics_scoring_tables_of_athlet_2022_Mens.js';
-import { points_womens_outdor } from './world_athletics_scoring_tables_of_athlet_2022_Womens.js';
-import { points_mens_indoor } from './world_athletics_scoring_tables_of_athlet_2022_Inndoor_Mens.js';
-import { points_womens_indoor } from './world_athletics_scoring_tables_of_athlet_2022_Inndoor_Womens.js';
-
-const eventosSinDecimales = [
-    "5km", "10km", "15km", "10 Miles", "20km", "HM", 
-    "25km", "30km", "Marathon", "100km", "3kmW", 
-    "5kmW", "10kmW", "15kmW", "20kmW", "30kmW", 
-    "35kmW", "50kmW"
-];
-
-const concursos = [
-    "HJ", "PV", "LJ", "TJ",
-    "SP", "DT", "HT", "JT"
-];
-
-const combinadas = [
-    "Decathlon", "Heptathlon", "Pentathlon"
-];
-
-// Mensaje de Error
-const mensajeErrorDiv = document.getElementById('mensaje_error');
-
-// Elimina el contenido del mensaje de error
-mensajeErrorDiv.innerHTML = '';
-
-// Verifica si el div tiene contenido
-if (mensajeErrorDiv.innerHTML.trim() == '') {
-    mensajeErrorDiv.style.backgroundColor = 'transparent'; // Elimina el fondo
-} else {
-    mensajeErrorDiv.style.backgroundColor = '#f5bcbc'; // Restaura el fondo si hay contenido
-}
-
-let elementotr;
-
-const regexMarca = /^(?:(\d+):(\d{2}):(\d{2})(?:\.(\d+))?|(\d+):(\d{2})(?:\.(\d+))?|(\d+)(?:\.(\d+))?)$/; // Expresión regular para validar los formatos permitidos  (1. "9.58" 2. "1:20.33" 3. "25:15.44" 4. "15:20" 5. "5653" 6. "100.98" 7. 3:40:04.30)
-const regexconcursos = /^\d+(\.\d+)?$/; // Solo para concursos, (1. "100.89", "2.55", 3. "4.6" 4. "77.8")
-const regexPuntos = /^\d+$/; // Expresión regular para validar los formatos permitidos  (1. "958")
-
-// Funciones
-const buscarPuntos = (marca, prueba, tabla) => {
-    var puntos;
-    const resultado = tabla.find(entry => entry[prueba] == marca);
-    if (resultado) {
-        puntos = resultado.puntos;
-    } else {
-        puntos = null;
-    }
-    return puntos;
+// ============================================
+// CONSTANTS
+// ============================================
+const EVENT_TYPES = {
+    NO_DECIMALS: [
+        "5km", "10km", "15km", "10 Miles", "20km", "HM", 
+        "25km", "30km", "Marathon", "100km", "3kmW", 
+        "5kmW", "10kmW", "15kmW", "20kmW", "30kmW", 
+        "35kmW", "50kmW"
+    ],
+    FIELD: ["HJ", "PV", "LJ", "TJ", "SP", "DT", "HT", "JT"],
+    COMBINED: ["Decathlon", "Heptathlon", "Pentathlon"]
 };
 
-const buscarMarca = (puntos, prueba, tabla) => {
-    var marca;
-    const resultado = tabla.find(entry => entry.puntos == puntos);
-    if (resultado) {
-        marca = resultado[prueba];
-    } else {
-        marca = null;
-    }
-    return marca;
+const REGEX = {
+    TIME: /^(?:(\d+):(\d{2}):(\d{2})(?:\.(\d+))?|(\d+):(\d{2})(?:\.(\d+))?|(\d+)(?:\.(\d+))?)$/,
+    FIELD: /^\d+(\.\d+)?$/,
+    POINTS: /^\d+$/
 };
 
-function convertirTiempoEnSegundos(tabla, posicionI, evento) {
+// ============================================
+// DATA LOADING
+// ============================================
+let scoringTables = {
+    outdoor: { men: null, women: null },
+    indoor: { men: null, women: null }
+};
 
-    let tiempoEnSegundos = tabla[posicionI][evento].split(':');
-    
-    let totalSegundos = 0;
-
-    // Verificamos cuántos elementos hay en la tabla
-    if (tiempoEnSegundos.length == 3) {
-        // Formato: horas:minutos:segundos
-        let horas = Number(tiempoEnSegundos[0]);
-        let minutos = Number(tiempoEnSegundos[1]);
-        let segundos = Number(tiempoEnSegundos[2]);
-        totalSegundos = (horas * 3600) + (minutos * 60) + segundos;
-    } else if (tiempoEnSegundos.length == 2) {
-        // Formato: minutos:segundos
-        let minutos = Number(tiempoEnSegundos[0]);
-        let segundos = Number(tiempoEnSegundos[1]);
-        totalSegundos = (minutos * 60) + segundos;
-    } else if (tiempoEnSegundos.length == 1) {
-        // Formato: solo segundos
-        totalSegundos = Number(tiempoEnSegundos[0]);
-    }
-
-    return totalSegundos; // Retorna el tiempo total en segundos
+function convertArrayToObject(dataArray) {
+    const obj = {};
+    dataArray.forEach(entry => {
+        const points = entry.Points;
+        obj[points] = entry;
+    });
+    return obj;
 }
 
-function convertirTiempoEnSegundos_soloMarca(marca) {
-    let tiempoEnSegundos = marca.split(':');
+async function loadScoringTables() {
+    try {
+        const [mensOutdoor, womensOutdoor, mensIndoor, womensIndoor] = await Promise.all([
+            fetch('./data/mens-outdoor.json').then(r => r.json()),
+            fetch('./data/womens-outdoor.json').then(r => r.json()),
+            fetch('./data/mens-indoor.json').then(r => r.json()),
+            fetch('./data/womens-indoor.json').then(r => r.json())
+        ]);
 
-    let totalSegundos = 0;
-
-    // Verificamos cuántos elementos hay en el tiempo
-    if (tiempoEnSegundos.length == 3) {
-        // Formato: horas:minutos:segundos
-        let horas = Number(tiempoEnSegundos[0]);
-        let minutos = Number(tiempoEnSegundos[1]);
-        let segundos = Number(tiempoEnSegundos[2]);
-        totalSegundos = (horas * 3600) + (minutos * 60) + segundos;
-    } else if (tiempoEnSegundos.length == 2) {
-        // Formato: minutos:segundos
-        let minutos = Number(tiempoEnSegundos[0]);
-        let segundos = Number(tiempoEnSegundos[1]);
-        totalSegundos = (minutos * 60) + segundos;
-    } else if (tiempoEnSegundos.length == 1) {
-        // Formato: solo segundos
-        totalSegundos = Number(tiempoEnSegundos[0]);
+        scoringTables.outdoor.men = convertArrayToObject(mensOutdoor);
+        scoringTables.outdoor.women = convertArrayToObject(womensOutdoor);
+        scoringTables.indoor.men = convertArrayToObject(mensIndoor);
+        scoringTables.indoor.women = convertArrayToObject(womensIndoor);
+    } catch (error) {
+        console.error('Error loading scoring tables:', error);
+        showError('Error loading data. Please refresh the page.');
     }
-
-    return totalSegundos; // Retorna el tiempo total en segundos
 }
 
-function convertirSegundosMarca(numero) {
-    // Calculamos las horas, minutos y segundos
-    let horas = Math.floor(numero / 3600); // Convertimos a horas
-    let minutos = Math.floor((numero % 3600) / 60); // Obtenemos los minutos restantes
-    let segundos = (numero % 60).toFixed(2); // Extraemos los segundos y los formateamos a dos decimales
-    let retornar;
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+function showError(message) {
+    const mensajeErrorDiv = document.getElementById('mensaje_error');
+    mensajeErrorDiv.textContent = message;
+    mensajeErrorDiv.style.backgroundColor = message ? '#f5bcbc' : 'transparent';
+}
 
-    // Verificamos si hay horas, solo minutos y segundos, o solo segundos
-    if (horas > 0) {
-        // Formato: horas:minutos.segundos
-        retornar = `${horas}:${String(minutos).padStart(2, '0')}:${String(segundos).padStart(5, '0')}`;
-    } else if (minutos > 0) {
-        // Formato: minutos.segundos
-        retornar = `${minutos}:${String(segundos).padStart(5, '0')}`;
+function clearError() {
+    showError('');
+}
+
+function convertTimeToSeconds(timeStr) {
+    const parts = timeStr.split(':');
+    let totalSeconds = 0;
+
+    if (parts.length === 3) {
+        totalSeconds = (Number(parts[0]) * 3600) + (Number(parts[1]) * 60) + Number(parts[2]);
+    } else if (parts.length === 2) {
+        totalSeconds = (Number(parts[0]) * 60) + Number(parts[1]);
     } else {
-        // Solo segundos
-        retornar = `${segundos}`;
+        totalSeconds = Number(parts[0]);
+    }
+
+    return totalSeconds;
+}
+
+function convertSecondsToTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = (seconds % 60).toFixed(2);
+
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(5, '0')}`;
+    } else if (minutes > 0) {
+        return `${minutes}:${String(secs).padStart(5, '0')}`;
+    } else {
+        return secs;
+    }
+}
+
+function findScoreByMark(mark, event, tableData) {
+    for (let points = 1400; points >= 1; points--) {
+        const entry = tableData[points];
+        if (entry && entry[event] === mark) {
+            return points;
+        }
+    }
+    return null;
+}
+
+function findMarkByScore(score, event, tableData) {
+    const entry = tableData[score];
+    return entry && entry[event] ? entry[event] : null;
+}
+
+// ============================================
+// CALCULATION FUNCTIONS
+// ============================================
+function calculateForTimeEvent(mark, event, tableData) {
+    const markSeconds = convertTimeToSeconds(mark);
+    
+    let maxSeconds = null;
+    let minSeconds = null;
+    
+    for (let points = 1400; points >= 1; points--) {
+        const entry = tableData[points];
+        if (!entry || !entry[event] || entry[event] === '-') continue;
+        
+        const entrySeconds = convertTimeToSeconds(entry[event]);
+        
+        if (maxSeconds === null || entrySeconds < maxSeconds) maxSeconds = entrySeconds;
+        if (minSeconds === null || entrySeconds > minSeconds) minSeconds = entrySeconds;
     }
     
-    return retornar;
-}
-
-function calculos(points_array, outdoorIndoor, menWomen, selectedEvent, marcaInput, estadoTablaMarca, puntosInput, estadoTablaPuntos) {
-    if (marcaInput != "" && estadoTablaMarca != 'none') { // Por marca
-        // Por si las primeras marcas son == "-"
-        let salir_marca_maxima = false;
-        let salir_marca_minima = false;
-        let numeroImaxima;
-        let numeroIminima;
-        for (let i = 0; !salir_marca_maxima; i++) {
-            if (points_array[i][selectedEvent] != "-") {
-                numeroImaxima = i;
-                salir_marca_maxima = true;
-            }
-        }
-
-        for (let i = 1399; !salir_marca_minima; i--) {
-            if (points_array[i][selectedEvent] != "-") {
-                numeroIminima = i;
-                salir_marca_minima = true;
-            }
-        }
-
-        if (!concursos.includes(selectedEvent) && !combinadas.includes(selectedEvent)) { // Los que no son concursos ni combinadas
-            if (regexMarca.test(marcaInput)) {
-                // Verificamos si hay decimales
-                let marcaFinal;
-                if (!eventosSinDecimales.includes(selectedEvent)) {
-                    marcaFinal = convertirTiempoEnSegundos_soloMarca(marcaInput);
-                    marcaFinal = convertirSegundosMarca(marcaFinal);
-                } else {
-                    marcaFinal = marcaInput;
-                }
-
-                const puntos = buscarPuntos(marcaFinal, selectedEvent, points_array);
-
-                if (convertirTiempoEnSegundos(points_array, numeroImaxima, selectedEvent) > convertirTiempoEnSegundos_soloMarca(marcaFinal)) {
-                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaFinal, "+1400 (Out of Tables)"); // Fuera de Tablas
-                    //resultadoTabla.textContent = `(Poner en Tabla): ${menWomen} - ${outdoorIndoor}      ${selectedEvent} - ${marcaFinal} - +1400 (Out of Tables)`;
-                } else if (convertirTiempoEnSegundos(points_array, numeroIminima, selectedEvent) < convertirTiempoEnSegundos_soloMarca(marcaFinal)) {
-                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaFinal, "0 (Out of Tables)"); // Fuera de Tablas
-                } else {
-                    if (puntos) {
-                        agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaFinal, puntos);
-                    } else {
-                        let salir_marca = false;
-
-                        for (let i = 0; !salir_marca; i++) {
-                            let marcaFinalSegundos = convertirTiempoEnSegundos_soloMarca(marcaFinal);
-                            let marcaISegundos = convertirTiempoEnSegundos(points_array, i, selectedEvent);
-
-                            if (marcaFinalSegundos < marcaISegundos) {
-
-                                let nuevosPuntos = 1400 - i;
-
-                                agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaFinal, nuevosPuntos);
-
-                                salir_marca = true;
-                            }
-                        }
-                    }
-                }
-            } else {
-                if (!eventosSinDecimales.includes(selectedEvent)) {
-                    mensajeErrorDiv.textContent = `The format must be: hh:mm:ss.ss`;
-                } else {
-                    mensajeErrorDiv.textContent = `The format must be: hh:mm:ss`;
-                }
-            }
-        } else if (combinadas.includes(selectedEvent)) { // Solo las convinadas
-            if (regexPuntos.test(marcaInput)) {
-                const puntos = buscarPuntos(marcaInput, selectedEvent, points_array);
-
-                if (points_array[numeroImaxima][selectedEvent] < Number(marcaInput)) {
-
-                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaInput, "+1400 (Out of Tables)"); // Fuera de Tablas
-
-                } else if (points_array[numeroIminima][selectedEvent] > Number(marcaInput)) {
-
-                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaInput, "0 (Out of Tables)"); // Fuera de Tablas
-
-                } else {
-                    if (puntos) {
-                        agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaInput, puntos);
-                    } else {
-                        let salir_combinadas = false;
-
-                        for (let i = 0; !salir_combinadas; i++) {
-                            
-                            if (marcaInput > points_array[i][selectedEvent]) {
-
-                                let nuevosPuntos = 1400 - i;
-
-                                agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaInput, nuevosPuntos);
-
-                                salir_combinadas = true;
-                            }
-                        }
-                    }
-                }
-            } else {
-                mensajeErrorDiv.textContent = `The format must be in points`;
-            }
-        } else {  // Solo los que son concursos
-            if (regexconcursos.test(marcaInput)) {
-                let marcaConcurso = Number(marcaInput).toFixed(2);
-
-                const puntos = buscarPuntos(marcaConcurso, selectedEvent, points_array);
-
-                if (Number(points_array[numeroImaxima][selectedEvent]) < Number(marcaConcurso)) {
-                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, "+1400 (Out of Tables)");
-                } else if (Number(points_array[numeroIminima][selectedEvent]) > Number(marcaConcurso)) {
-                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, "0 (Out of Tables)");
-                } else {
-                    if (puntos) {
-                        agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, puntos);
-                    } else {
-                        let salir_concurso = false;
-
-                        for (let i = 0; !salir_concurso; i++) {
-                            // Convertir ambos a números con 2 decimales para comparar
-                            let marcaArray = Number(points_array[i][selectedEvent]).toFixed(2);
-                            
-                            if (Number(marcaConcurso) > Number(marcaArray)) {
-                                let nuevosPuntos = 1400 - i;
-                                agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaConcurso, nuevosPuntos);
-                                salir_concurso = true;
-                            }
-                        }
-                    }
-                }
-            } else {
-                mensajeErrorDiv.textContent = `The format must be: m.mm`;
-            }
-        }
-    } else if (estadoTablaPuntos == 'none') {
-        if (!concursos.includes(selectedEvent) && !combinadas.includes(selectedEvent)) { // Seleciona un Tiempo
-            mensajeErrorDiv.textContent = `Select the Time`;
-        } else if (combinadas.includes(selectedEvent)) { // Seleciona Puntos
-            mensajeErrorDiv.textContent = `Select the Points`;
-        } else { // Seleciona Metros
-            mensajeErrorDiv.textContent = `Select the Meters`;
-        }
-    }
-    if (puntosInput != "" && estadoTablaPuntos != 'none') { // Por Puntos
-        if (regexPuntos.test(puntosInput)) {
-            if (Number(puntosInput) >= 1 && Number(puntosInput) <= 1400) { // Entre 1-1400
-                if (Number.isInteger(Number(puntosInput))) { // Solo números enteros
-                    const marca = buscarMarca(puntosInput, selectedEvent, points_array);
-
-                    if (marca != '-') {
-
-                        agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marca, puntosInput);
-
-                    } else {
-                        let salir_puntos = false;
-                        for (let i = 0; !salir_puntos; i++) {
-
-                            let puntosSimilaresArriba = Number(puntosInput) + i;
-
-                            let marcaArriba = buscarMarca(puntosSimilaresArriba, selectedEvent, points_array); // Cabiamos los puntos introduciodos por los de arriba
-
-                            if (marcaArriba != '-' && marcaArriba != null) {
-                                agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaArriba, puntosInput);
-                                salir_puntos = true;
-                            } else {
-                                let puntosSimilaresAbajo = Number(puntosInput) - i;
-
-                                let marcaAbajo = buscarMarca(puntosSimilaresAbajo, selectedEvent, points_array); // Cabiamos los puntos introduciodos por los de abajo
-                                
-                                if (marcaAbajo != '-' && marcaAbajo != null) {
-                                    agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marcaAbajo, puntosInput);
-                                    salir_puntos = true;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    mensajeErrorDiv.textContent = `Tables are only valid without decimals`; // Las tablas solo son válidas sin decimales
-                }
-            } else {
-                mensajeErrorDiv.textContent = `Tables are only valid between 1 - 1400 Points`; // Las tablas solo son válidas entre 1 - 1400 puntos
-            }
-        } else {
-            mensajeErrorDiv.textContent = `The format must be in Points`; // El formato debe ser en puntos
-        }
-    } else if (estadoTablaMarca == 'none') {
-        mensajeErrorDiv.textContent = `Select the Points`; // Selecciona los puntos
-    }
-}
-
-function agregarEnTabla(menWomen, outdoorIndoor, selectedEvent, marca, puntos) {
-    // Mostrar en el HTML
-    const resultadoTabla = document.getElementById('resultado');
-
-    const tabla_tr_NuevaFila = document.createElement('tr');
-    tabla_tr_NuevaFila.classList.add('tabla_tr_NuevaFila');
-
-    const tabla_td_Sexo = document.createElement('td');
-    tabla_td_Sexo.classList.add('tabla_td_Sexo');
-
-    const tabla_td_Pista = document.createElement('td');
-    tabla_td_Pista.classList.add('tabla_td_Pista');
-
-    const tabla_td_Prueba = document.createElement('td');
-    tabla_td_Prueba.classList.add('tabla_td_Prueba');
-
-    const tabla_td_Marca = document.createElement('td');
-    tabla_td_Marca.classList.add('tabla_td_Marca');
-
-    const tabla_td_Puntos = document.createElement('td');
-    tabla_td_Puntos.classList.add('tabla_td_Puntos'); 
-
-    tabla_td_Sexo.textContent = `${menWomen}`;
-    tabla_td_Pista.textContent = `${outdoorIndoor}`;
-    tabla_td_Prueba.textContent = `${selectedEvent}`;
-    tabla_td_Marca.textContent = `${marca}`;
-    tabla_td_Puntos.textContent = `${puntos}`;
-
-    tabla_tr_NuevaFila.appendChild(tabla_td_Sexo);
-    tabla_tr_NuevaFila.appendChild(tabla_td_Pista);
-    tabla_tr_NuevaFila.appendChild(tabla_td_Prueba);
-    tabla_tr_NuevaFila.appendChild(tabla_td_Marca);
-    tabla_tr_NuevaFila.appendChild(tabla_td_Puntos);
+    if (markSeconds < maxSeconds) return 1401;
+    if (markSeconds > minSeconds) return 0;
     
-    resultadoTabla.appendChild(tabla_tr_NuevaFila);
+    for (let points = 1400; points >= 1; points--) {
+        const entry = tableData[points];
+        if (!entry || !entry[event] || entry[event] === '-') continue;
+        
+        const entrySeconds = convertTimeToSeconds(entry[event]);
+        
+        if (markSeconds <= entrySeconds) {
+            return points;
+        }
+    }
+    
+    return 0;
 }
 
-function actualizarOpcionesSelecionable() {
+function calculateForFieldEvent(mark, event, tableData) {
+    const markValue = Number(mark);
+    
+    let maxValue = null;
+    let minValue = null;
+    
+    for (let points = 1400; points >= 1; points--) {
+        const entry = tableData[points];
+        if (!entry || !entry[event] || entry[event] === '-') continue;
+        
+        const entryValue = Number(entry[event]);
+        
+        if (maxValue === null || entryValue > maxValue) maxValue = entryValue;
+        if (minValue === null || entryValue < minValue) minValue = entryValue;
+    }
+    
+    if (markValue > maxValue) return 1401;
+    if (markValue < minValue) return 0;
+    
+    for (let points = 1400; points >= 1; points--) {
+        const entry = tableData[points];
+        if (!entry || !entry[event] || entry[event] === '-') continue;
+        
+        const entryValue = Number(entry[event]);
+        
+        if (markValue >= entryValue) {
+            return points;
+        }
+    }
+    
+    return 0;
+}
+
+function calculateForCombinedEvent(mark, event, tableData) {
+    const markValue = Number(mark);
+    
+    let maxValue = null;
+    let minValue = null;
+    
+    for (let points = 1400; points >= 1; points--) {
+        const entry = tableData[points];
+        if (!entry || !entry[event] || entry[event] === '-') continue;
+        
+        const entryValue = Number(entry[event]);
+        
+        if (maxValue === null || entryValue > maxValue) maxValue = entryValue;
+        if (minValue === null || entryValue < minValue) minValue = entryValue;
+    }
+    
+    if (markValue > maxValue) return 1401;
+    if (markValue < minValue) return 0;
+    
+    for (let points = 1400; points >= 1; points--) {
+        const entry = tableData[points];
+        if (!entry || !entry[event] || entry[event] === '-') continue;
+        
+        const entryValue = Number(entry[event]);
+        
+        if (markValue >= entryValue) {
+            return points;
+        }
+    }
+    
+    return 0;
+}
+
+function calculateScore(mark, event, tableData) {
+    const exactScore = findScoreByMark(mark, event, tableData);
+    if (exactScore) return exactScore;
+
+    if (EVENT_TYPES.FIELD.includes(event)) {
+        return calculateForFieldEvent(mark, event, tableData);
+    } else if (EVENT_TYPES.COMBINED.includes(event)) {
+        return calculateForCombinedEvent(mark, event, tableData);
+    } else {
+        return calculateForTimeEvent(mark, event, tableData);
+    }
+}
+
+// ============================================
+// TABLE FUNCTIONS
+// ============================================
+function addResultToTable(gender, track, event, mark, score) {
+    const resultTable = document.getElementById('resultado');
+    
+    const row = document.createElement('tr');
+    row.classList.add('tabla_tr_NuevaFila');
+    
+    const cells = [gender, track, event, mark, score];
+    cells.forEach(content => {
+        const cell = document.createElement('td');
+        cell.textContent = content;
+        row.appendChild(cell);
+    });
+    
+    resultTable.appendChild(row);
+    checkForTD();
+}
+
+function clearResults() {
+    const table = document.getElementById("resultado");
+    while (table.rows.length > 1) {
+        table.deleteRow(1);
+    }
+    checkForTD();
+}
+
+function checkForTD() {
+    const table = document.getElementById("resultado");
+    const hasTD = table.querySelector("td") !== null;
+    
+    if (hasTD) {
+        table.classList.add("has-td");
+    } else {
+        table.classList.remove("has-td");
+    }
+}
+
+// ============================================
+// FORM HANDLING
+// ============================================
+function updateEventOptions() {
     const eventType = document.querySelector('input[name="outdoor_indoor"]:checked').id;
     const gender = document.querySelector('input[name="men_women"]:checked').id;
     const selectEvent = document.getElementById('prueba');
 
-    // Limpiar opciones actuales
     selectEvent.innerHTML = '';
 
-    // Crear nuevas opciones basadas en la selección
     let options = [];
-    if (eventType == 'indoor') {
-        if (gender == 'men') {
+    if (eventType === 'indoor') {
+        if (gender === 'men') {
             options = [
                 { value: '50m', text: '50 Metres', class: 'velocidad' },
                 { value: '55m', text: '55 Metres', class: 'velocidad' },
@@ -439,7 +345,7 @@ function actualizarOpcionesSelecionable() {
             ];
         }
     } else {
-        if (gender == 'men') {
+        if (gender === 'men') {
             options = [
                 { value: '100m', text: '100 Metres', class: 'velocidad' },
                 { value: '200m', text: '200 Metres', class: 'velocidad' },
@@ -561,195 +467,197 @@ function actualizarOpcionesSelecionable() {
             ];
         }
     }
-    // Agregar nuevas opciones al select
-    options.forEach((option) => {
+
+    options.forEach(option => {
         const newOption = document.createElement('option');
         newOption.value = option.value;
         newOption.textContent = option.text;
-        newOption.className = option.class;
         newOption.title = option.text;
-
+        newOption.className = option.class;
         selectEvent.appendChild(newOption);
     });
+
+    updateMarkInput();
 }
 
-function actualizarInputMarca() {
-    const marcaSpan = document.getElementById('marca_span');
-    const marcaPruebaInput = document.getElementById('marca_prueba');
-    const selectedEvent = document.getElementById('prueba').value; // Obtener el valor seleccionado
+function updateMarkInput() {
+    const markSpan = document.getElementById('marca_span');
+    const markInput = document.getElementById('marca_prueba');
+    const selectedEvent = document.getElementById('prueba').value;
 
-    if (!concursos.includes(selectedEvent) && !combinadas.includes(selectedEvent) && !eventosSinDecimales.includes(selectedEvent)) { // Selecciona un Tiempo
-        marcaSpan.textContent = "Time";
-        marcaPruebaInput.placeholder = "hh:mm:ss.ss";
-    } else if (eventosSinDecimales.includes(selectedEvent)) { // Selecciona Sin decimales
-        marcaSpan.textContent = "Time";
-        marcaPruebaInput.placeholder = "hh:mm:ss";
-    } else if (combinadas.includes(selectedEvent)) { // Selecciona Puntos
-        marcaSpan.textContent = "Points";
-        marcaPruebaInput.placeholder = "pts";
-    } else { // Selecciona Metros
-        marcaSpan.textContent = "Meters";
-        marcaPruebaInput.placeholder = "m:mm";
-    }
-}
-
-function limpiarResultados() {
-    // Seleccionamos la tabla
-    var tabla = document.getElementById("resultado");
-    // Limpiamos todos los tr excepto el primero (el de los encabezados)
-    while (tabla.rows.length > 1) {
-        tabla.deleteRow(1);
-    }
-}
-
-// Función que verifica si hay al menos un <td> en la tabla
-function checkForTD() {
-    // Verifica si hay algún <td> en la tabla
-    const table = document.getElementById("resultado");
-    const hasTD = table.querySelector("td") != null;
-
-    // Si hay <td>, agrega la clase 'has-td' a la tabla, sino, la elimina
-    if (hasTD) {
-        table.classList.add("has-td");
+    if (EVENT_TYPES.COMBINED.includes(selectedEvent)) {
+        markSpan.textContent = "Points";
+        markInput.placeholder = "pts";
+    } else if (EVENT_TYPES.FIELD.includes(selectedEvent)) {
+        markSpan.textContent = "Meters";
+        markInput.placeholder = "m.mm";
+    } else if (EVENT_TYPES.NO_DECIMALS.includes(selectedEvent)) {
+        markSpan.textContent = "Time";
+        markInput.placeholder = "hh:mm:ss";
     } else {
-        table.classList.remove("has-td");
+        markSpan.textContent = "Time";
+        markInput.placeholder = "hh:mm:ss.ss";
     }
-
-    const observer = new MutationObserver(checkForTD);
-    observer.observe(table, {
-        childList: true,    // Observar cambios en los nodos hijos (filas y celdas)
-        subtree: true,      // Observar cambios en los subelementos dentro de la tabla
-    });
 }
 
+// ============================================
+// FORM SUBMISSION
+// ============================================
+function handleFormSubmit(event) {
+    event.preventDefault();
+    clearError();
 
-document.getElementById('resultado').addEventListener('mousedown', function (e) { // se ejecuta cuando se mantiende pulsado (e de elemento)
-    if (e.target.tagName.toLowerCase() == 'td') { // Verifica "e" si es un td
-        elementotr = e.target.closest('tr'); // Encuetra la fila del td selecionado
+    const trackType = document.querySelector('input[name="outdoor_indoor"]:checked').id;
+    const genderType = document.querySelector('input[name="men_women"]:checked').id;
+    const selectedEvent = document.getElementById('prueba').value;
+    
+    const markInput = document.getElementById('marca_prueba').value.trim();
+    const scoreInput = document.getElementById('puntos_prueba').value.trim();
+    
+    const markTabVisible = document.getElementById('tabla_marca').style.display !== 'none';
+    const scoreTabVisible = document.getElementById('tabla_puntos').style.display !== 'none';
 
-        // Mostrar el pop-up
-        const popup_papelera = document.getElementById('popup_papelera'); // Selecionamos el pop-up
-        popup_papelera.style.display = 'block'; // Ponemos el pop-up visible
-        const rect = elementotr.getBoundingClientRect(); // Obtiene la posicion de la fila
-        popup_papelera.style.left = `${rect.left + window.scrollX + elementotr.offsetWidth + 10}px`;
-        popup_papelera.style.top = `${rect.top + window.scrollY + elementotr.offsetHeight / 2 - popup_papelera.offsetHeight / 2}px`;
-
+    const tableData = scoringTables[trackType][genderType];
+    if (!tableData) {
+        showError('Data not loaded yet. Please wait and try again.');
+        return;
     }
-});
 
-// Eliminar la fila cuando se haga clic en el La Papelera (pop-up)
-document.getElementById('popup_papelera').addEventListener('click', function () {
-    if (elementotr) {
-        elementotr.remove();
-        document.getElementById('popup_papelera').style.display = 'none'; // Ocultar pop-up de nuevo
+    const gender = genderType.charAt(0).toUpperCase() + genderType.slice(1);
+    const track = trackType.charAt(0).toUpperCase() + trackType.slice(1);
+
+    if (markInput && markTabVisible) {
+        let isValid = false;
+        let processedMark = markInput;
+
+        if (EVENT_TYPES.COMBINED.includes(selectedEvent)) {
+            isValid = REGEX.POINTS.test(markInput);
+            if (!isValid) {
+                showError('The format must be in points');
+                return;
+            }
+        } else if (EVENT_TYPES.FIELD.includes(selectedEvent)) {
+            isValid = REGEX.FIELD.test(markInput);
+            if (!isValid) {
+                showError('The format must be: m.mm');
+                return;
+            }
+            processedMark = Number(markInput).toFixed(2);
+        } else {
+            isValid = REGEX.TIME.test(markInput);
+            if (!isValid) {
+                const format = EVENT_TYPES.NO_DECIMALS.includes(selectedEvent) 
+                    ? 'hh:mm:ss' 
+                    : 'hh:mm:ss.ss';
+                showError(`The format must be: ${format}`);
+                return;
+            }
+            if (!EVENT_TYPES.NO_DECIMALS.includes(selectedEvent)) {
+                processedMark = convertSecondsToTime(convertTimeToSeconds(markInput));
+            }
+        }
+
+        const score = calculateScore(processedMark, selectedEvent, tableData);
+        const displayScore = score > 1400 ? '+1400 (Out of Tables)' : 
+                            score === 0 ? '0 (Out of Tables)' : score;
+        
+        addResultToTable(gender, track, selectedEvent, processedMark, displayScore);
     }
-});
+    else if (scoreInput && scoreTabVisible) {
+        if (!REGEX.POINTS.test(scoreInput)) {
+            showError('The format must be in Points');
+            return;
+        }
 
-// Ocultar el pop-up si se hace clic fuera de los <td> o del pop-up
-document.addEventListener('mousedown', function (e) {
-    const popup_papelera = document.getElementById('popup_papelera');
-    const isClickInsidePopup = popup_papelera.contains(e.target);
-    const isClickInsideTable = e.target.closest('#resultado'); // Verifica si el clic fue dentro del div de la tabla
+        const points = Number(scoreInput);
+        if (points < 1 || points > 1400) {
+            showError('Tables are only valid between 1 - 1400 Points');
+            return;
+        }
 
-    if (!isClickInsidePopup && !isClickInsideTable) {
-        popup_papelera.style.display = 'none'; // Ocultar pop-up
+        let mark = findMarkByScore(points, selectedEvent, tableData);
+        
+        if (!mark || mark === '-') {
+            for (let i = 0; i < 100; i++) {
+                mark = findMarkByScore(points + i, selectedEvent, tableData);
+                if (mark && mark !== '-') break;
+                
+                mark = findMarkByScore(points - i, selectedEvent, tableData);
+                if (mark && mark !== '-') break;
+            }
+        }
+
+        if (mark && mark !== '-') {
+            addResultToTable(gender, track, selectedEvent, mark, points);
+        } else {
+            showError('No mark found for this score in the selected event');
+        }
+    } else {
+        showError('Please enter a mark or score');
     }
-});
+}
 
+// ============================================
+// EVENT LISTENERS
+// ============================================
+document.addEventListener("DOMContentLoaded", async () => {
+    clearError(); // Inicialitzar el fons transparent
+    await loadScoringTables();
+    updateEventOptions();
 
-// Limpiar
-document.addEventListener("DOMContentLoaded", function() {
-    document.getElementById("limpiarResultados").addEventListener("click", limpiarResultados);
-});
-
-// Marca / Puntos
-document.addEventListener("DOMContentLoaded", () => {
     const tabs = document.querySelectorAll('.tab');
     const contents = document.querySelectorAll('.content');
 
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            // Ocultar todos los contenidos
-            contents.forEach(content => {
-                content.style.display = 'none';
-            });
-
-            // Mostrar el contenido correspondiente
+            contents.forEach(content => content.style.display = 'none');
             const target = tab.getAttribute('data-tab');
             document.getElementById(target).style.display = 'block';
-
-            // Opcional: resaltar la pestaña activa
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
         });
     });
-});
 
-// Escuchar cambios en los radios de tipo de evento
-document.querySelectorAll('input[name="outdoor_indoor"]').forEach((radio) => {
-    radio.addEventListener('change', actualizarOpcionesSelecionable);
-});
+    document.querySelectorAll('input[name="outdoor_indoor"]').forEach(radio => {
+        radio.addEventListener('change', updateEventOptions);
+    });
 
-// Escuchar cambios en los radios de género
-document.querySelectorAll('input[name="men_women"]').forEach((radio) => {
-    radio.addEventListener('change', actualizarOpcionesSelecionable);
-});
+    document.querySelectorAll('input[name="men_women"]').forEach(radio => {
+        radio.addEventListener('change', updateEventOptions);
+    });
 
-document.getElementById('prueba').addEventListener('change', actualizarInputMarca);
+    document.getElementById('prueba').addEventListener('change', updateMarkInput);
+    document.getElementById('formulario').addEventListener('submit', handleFormSubmit);
+    document.getElementById('limpiarResultados').addEventListener('click', clearResults);
 
-// Calcular
-document.getElementById('formulario').addEventListener('submit', function(event) {
-    event.preventDefault(); // Evita que el formulario se envíe de forma normal
+    let selectedRow = null;
 
-    // Obtener el id del radio button de outdoor/indoor y convierte en mañuscula la primera
-    const outdoorIndoorId = document.querySelector('input[name="outdoor_indoor"]:checked').id;
-    const outdoorIndoor = outdoorIndoorId.charAt(0).toUpperCase() + outdoorIndoorId.slice(1);
-
-    // Obtener el id del radio button de mens/womens y convierte en mañuscula la primera
-    const menWomenId = document.querySelector('input[name="men_women"]:checked').id;
-    const menWomen = menWomenId.charAt(0).toUpperCase() + menWomenId.slice(1);
-
-    // Obtener el valor del select
-    const selectedEvent = document.getElementById('prueba').value;
-    
-    // Obtener el tiempo ingresado
-    const marcaInput = document.getElementById('marca_prueba').value;
-    // Tabla Marca
-    const tablaMarca = document.getElementById('tabla_marca');
-    const estadoTablaMarca = window.getComputedStyle(tablaMarca).display;
-
-    // Obtener los puntos ingresado
-    const puntosInput = document.getElementById('puntos_prueba').value;
-    // Tabla Puntos
-    const tablaPuntos = document.getElementById('tabla_puntos');
-    const estadoTablaPuntos = window.getComputedStyle(tablaPuntos).display;
-    
-    // Elimina el contenido del mensaje de error
-    mensajeErrorDiv.innerHTML = '';
-
-    if (outdoorIndoor == "Outdoor") {
-        if (menWomen == "Men") {
-            calculos(points_mens_outdor, outdoorIndoor, menWomen, selectedEvent, marcaInput, estadoTablaMarca, puntosInput, estadoTablaPuntos);
-        } else if (menWomen == "Women") {
-            calculos(points_womens_outdor, outdoorIndoor, menWomen, selectedEvent, marcaInput, estadoTablaMarca, puntosInput, estadoTablaPuntos);
+    document.getElementById('resultado').addEventListener('mousedown', (e) => {
+        if (e.target.tagName.toLowerCase() === 'td') {
+            selectedRow = e.target.closest('tr');
+            const popup = document.getElementById('popup_papelera');
+            popup.style.display = 'block';
+            const rect = selectedRow.getBoundingClientRect();
+            popup.style.left = `${rect.left + window.scrollX + selectedRow.offsetWidth + 10}px`;
+            popup.style.top = `${rect.top + window.scrollY + selectedRow.offsetHeight / 2 - popup.offsetHeight / 2}px`;
         }
-    } else if (outdoorIndoor == "Indoor"){
-        if (menWomen == "Men") {
-            calculos(points_mens_indoor, outdoorIndoor, menWomen, selectedEvent, marcaInput, estadoTablaMarca, puntosInput, estadoTablaPuntos);
-        } else if (menWomen == "Women") {
-            calculos(points_womens_indoor, outdoorIndoor, menWomen, selectedEvent, marcaInput, estadoTablaMarca, puntosInput, estadoTablaPuntos);
+    });
+
+    document.getElementById('popup_papelera').addEventListener('click', () => {
+        if (selectedRow) {
+            selectedRow.remove();
+            document.getElementById('popup_papelera').style.display = 'none';
+            checkForTD();
         }
-    }
+    });
 
-    // Verifica si el div tiene contenido
-    if (mensajeErrorDiv.innerHTML.trim() == '') {
-        mensajeErrorDiv.style.backgroundColor = 'transparent'; // Elimina el fondo
-    } else {
-        mensajeErrorDiv.style.backgroundColor = '#f5bcbc'; // Restaura el fondo si hay contenido
-    }
+    document.addEventListener('mousedown', (e) => {
+        const popup = document.getElementById('popup_papelera');
+        const isClickInsidePopup = popup.contains(e.target);
+        const isClickInsideTable = e.target.closest('#resultado');
 
-    checkForTD();
+        if (!isClickInsidePopup && !isClickInsideTable) {
+            popup.style.display = 'none';
+        }
+    });
 });
-
-// Inicializar opciones al cargar la página
-window.onload = actualizarOpcionesSelecionable;
